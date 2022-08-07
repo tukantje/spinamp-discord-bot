@@ -8,7 +8,6 @@ import {
   CommandInteractionOption
 } from 'discord.js';
 import { getPlayer } from 'player';
-import { QueryType } from 'discord-player';
 import { isGuildMember } from 'utils';
 import { SPINAMP } from 'extractors/spinamp';
 
@@ -37,45 +36,51 @@ export const Play: Command = {
     const query = interaction.options.get('song')?.value;
 
     if (isValidQuery(query)) {
-      const searchResult = await player.search(query, {
-        requestedBy: interaction.user,
-        searchEngine: SPINAMP
-      });
-
-      if (!searchResult || !searchResult.tracks.length) {
-        return void interaction.followUp({ content: 'No results were found!' });
-      }
-
-      if (interaction.guild) {
-        const queue = await player.createQueue(interaction.guild, {
-          metadata: interaction.channel
+      try {
+        const searchResult = await player.search(query, {
+          requestedBy: interaction.user,
+          searchEngine: SPINAMP
         });
 
-        try {
-          if (isGuildMember(interaction.member)) {
-            if (!queue.connection && interaction.member.voice.channel) {
-              await queue.connect(interaction.member.voice.channel);
+        if (!searchResult || !searchResult.tracks.length) {
+          return void interaction.followUp({ content: 'No results were found!' });
+        }
+
+        if (interaction.guild) {
+          const queue = await player.createQueue(interaction.guild, {
+            metadata: interaction.channel
+          });
+
+          try {
+            if (isGuildMember(interaction.member)) {
+              if (!queue.connection && interaction.member.voice.channel) {
+                await queue.connect(interaction.member.voice.channel);
+              }
             }
+          } catch {
+            if (interaction.guildId) {
+              void player.deleteQueue(interaction.guildId);
+            }
+
+            return void interaction.followUp({ content: 'Could not join your voice channel!' });
           }
-        } catch {
-          if (interaction.guildId) {
-            void player.deleteQueue(interaction.guildId);
+
+          await interaction.followUp({
+            content: `⏱ | Loading your ${searchResult.playlist ? 'playlist' : 'track'}...`
+          });
+
+          if (searchResult.playlist) {
+            queue.addTracks(searchResult.tracks);
+          } else {
+            queue.addTrack(searchResult.tracks[0]);
           }
 
-          return void interaction.followUp({ content: 'Could not join your voice channel!' });
+          if (!queue.playing) {
+            await queue.play();
+          }
         }
-
-        await interaction.followUp({ content: `⏱ | Loading your ${searchResult.playlist ? 'playlist' : 'track'}...` });
-
-        if (searchResult.playlist) {
-          queue.addTracks(searchResult.tracks);
-        } else {
-          queue.addTrack(searchResult.tracks[0]);
-        }
-
-        if (!queue.playing) {
-          await queue.play();
-        }
+      } catch (e) {
+        await interaction.followUp({ content: `No track found.` });
       }
     }
   }

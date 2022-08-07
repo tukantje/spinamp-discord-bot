@@ -1,13 +1,22 @@
-import { fetchTrackById, fetchAllTracks } from '@spinamp/spinamp-sdk';
-import { Readable } from 'stream';
+import { fetchTrackById, fetchAllTracks, ITrack } from '@spinamp/spinamp-sdk';
 
-function fetchTrack(id: string): Promise<Readable> {
-  return new Promise(async (resolve) => {
-    const track = await fetchTrackById(id);
-    if (!track) return null;
+async function fetchTrack(id: string): Promise<ITrack | null> {
+  const track = await fetchTrackById(id);
+  if (!track) {
+    return null;
+  }
 
-    return track;
-  });
+  return track;
+}
+
+async function fetchTracks(queryText: string): Promise<ITrack | null> {
+  const tracks = await fetchAllTracks({ filter: { title: { includesInsensitive: queryText } } });
+
+  if (!tracks || tracks.totalCount <= 0) {
+    return null;
+  }
+
+  return tracks.items[0];
 }
 
 function query() {}
@@ -19,19 +28,22 @@ export const spinAmpExtractor = {
   important: true,
   validate: (query: string) => true,
   getInfo: async (query: string) => {
+    const track = await fetchTracks(query);
+
+    if (!track) {
+      throw new Error('No track found.');
+    }
+
     return {
       playlist: null as any,
       info: [
         {
-          title: 'test',
-          // duration: data.duration * 1000,
-          // thumbnail: data.thumbnail,
-          engine:
-            'https://d2i9ybouka0ieh.cloudfront.net/audio-transcoded/f7f1af35-6afa-4595-ab8a-9442f2be9d4d/AUDIO_TRANSCODED/7191214-7477077-02%252520Dot_FeverDream_BiestaM2_2444%252520(1).m4a'
-          // views: 0,
-          // author: data.author.name,
-          // description: '',
-          // url: 'https://d2i9ybouka0ieh.cloudfront.net/audio-transcoded/f7f1af35-6afa-4595-ab8a-9442f2be9d4d/AUDIO_TRANSCODED/7191214-7477077-02%252520Dot_FeverDream_BiestaM2_2444%252520(1).m4a'
+          title: track.title,
+          // thumbnail: track.lossyArtworkUrl,
+          engine: track.lossyAudioUrl
+          // author: track.artist.name,
+          // description: track.description,
+          // url: track.lossyAudioUrl
         }
       ]
     };
