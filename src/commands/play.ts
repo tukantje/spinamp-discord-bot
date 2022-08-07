@@ -10,6 +10,7 @@ import {
 import { getPlayer } from 'player';
 import { QueryType } from 'discord-player';
 import { isGuildMember } from 'utils';
+import { SPINAMP } from 'extractors/spinamp';
 
 type Query = CommandInteractionOption['value'];
 type ValidQuery = string;
@@ -35,12 +36,10 @@ export const Play: Command = {
 
     const query = interaction.options.get('song')?.value;
 
-    console.log('Query is => ', query);
-
     if (isValidQuery(query)) {
       const searchResult = await player.search(query, {
         requestedBy: interaction.user,
-        searchEngine: QueryType.AUTO
+        searchEngine: SPINAMP
       });
 
       if (!searchResult || !searchResult.tracks.length) {

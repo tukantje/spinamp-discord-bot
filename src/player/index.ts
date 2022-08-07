@@ -1,5 +1,6 @@
 import { Player } from 'discord-player';
 import { Client } from 'discord.js';
+import { SPINAMP, spinAmpExtractor } from 'extractors/spinamp';
 import { listeners } from './listeners';
 
 let player: Player;
@@ -10,6 +11,8 @@ export function getPlayer(client: Client): Player {
   }
 
   player = new Player(client);
+
+  player.use(SPINAMP, spinAmpExtractor);
 
   listeners.error(player);
   listeners.connectionError(player);

@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@discordjs/opus": "^0.8.0",
+    "@spinamp/spinamp-sdk": "^0.0.5",
     "discord-player": "^5.3.0",
     "discord.js": "^14.1.2",
     "dotenv": "^16.0.1"
